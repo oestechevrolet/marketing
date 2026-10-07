@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b2e4f">
+<title>Solicitação de Marketing — Oeste Chevrolet</title>
+<style>
+:root{--navy:#0b2e4f;--blue:#1677c8;--light:#eef6fc;--border:#d9e4ed;--text:#183043;--muted:#657684;--danger:#c62828;--success:#16794a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:linear-gradient(180deg,#edf4f9 0,#f8fafc 45%,#eef3f7 100%)}
+.page{width:100%;max-width:900px;margin:0 auto;padding:26px 14px 50px}.top{text-align:center;margin-bottom:22px}.brand{display:inline-block;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid #dce7ef;color:var(--navy);font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.title{margin:12px 0 6px;font-size:clamp(30px,6vw,48px);line-height:1.04;color:var(--navy)}.subtitle{margin:0 auto;max-width:680px;color:var(--muted);line-height:1.55;font-size:15px}
+.progress-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 20px rgba(11,46,79,.05)}.progress-top{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:800;color:var(--navy);margin-bottom:9px}.progress{height:8px;background:#e8eef3;border-radius:99px;overflow:hidden}.progress-bar{height:100%;width:16.66%;background:linear-gradient(90deg,var(--blue),#42a4eb);transition:.25s ease}
+.card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:16px;box-shadow:0 8px 24px rgba(11,46,79,.05)}.step{display:none}.step.active{display:block}.step-kicker{font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}.step-title{margin:4px 0 5px;color:var(--navy);font-size:23px}.step-help{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:15px}.field.full{grid-column:1/-1}label{display:block;font-size:14px;font-weight:800;margin-bottom:7px;color:var(--navy)}.req{color:var(--danger)}input,select,textarea{width:100%;border:2px solid var(--border);border-radius:13px;padding:13px 14px;font:inherit;background:#fff;color:var(--text);outline:none}textarea{min-height:150px;resize:vertical;line-height:1.5}input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(22,119,200,.10)}.help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.choice{position:relative}.choice input{position:absolute;opacity:0;pointer-events:none}.choice label{margin:0;padding:13px 12px;border:2px solid var(--border);border-radius:13px;text-align:center;cursor:pointer;background:#fff;transition:.18s}.choice input:checked+label{border-color:var(--blue);background:var(--light);color:var(--navy);box-shadow:0 0 0 3px rgba(22,119,200,.09)}.hidden{display:none!important}.notice{padding:13px 14px;border-left:4px solid var(--blue);background:#f1f7fc;border-radius:10px;color:#345366;font-size:13px;line-height:1.5;margin:10px 0}.warning{padding:13px 14px;border-left:4px solid #e6a700;background:#fff9e8;border-radius:10px;color:#634d12;font-size:13px;line-height:1.5;margin:8px 0 14px}.filebox{border:2px dashed #b8cfdf;border-radius:14px;padding:14px;background:#f8fbfd}.filebox input{border:0;padding:0;background:transparent}.summary{background:#f7fafc;border:1px solid var(--border);border-radius:14px;padding:14px;font-size:13px;line-height:1.6}.actions{display:flex;justify-content:space-between;gap:12px;margin-top:18px}.btn{border:0;border-radius:999px;padding:14px 20px;font-size:15px;font-weight:800;cursor:pointer}.btn.secondary{background:#fff;color:var(--navy);border:2px solid var(--border)}.btn.primary{background:linear-gradient(90deg,var(--blue),#0e65a9);color:#fff}.btn.success{background:linear-gradient(90deg,#16814f,#0f6c40);color:#fff}.btn:disabled{opacity:.65;cursor:wait}.footer{text-align:center;color:var(--muted);font-size:12px;line-height:1.5;margin-top:18px}
+@media(max-width:700px){.page{padding:18px 10px 40px}.card{padding:18px;border-radius:17px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.choices{grid-template-columns:1fr}.actions{flex-direction:column}.btn{width:100%}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="top">
+<div class="brand">Oeste Chevrolet • Solicitação interna</div>
+<h1 class="title">Solicitação de Marketing</h1>
+<p class="subtitle">Preencha as informações necessárias para que o Departamento de Marketing possa analisar, aprovar e produzir sua demanda.</p>
+</header>
+
+<div class="progress-wrap">
+<div class="progress-top"><span id="progressLabel">Etapa 1 de 6</span><span id="progressName">Solicitante</span></div>
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+</div>
+
+<form action="https://forminit.com/f/vct7pwqa6ed" method="POST" enctype="multipart/form-data" id="marketingForm">
+<input type="hidden" name="_redirect" value="https://oestechevrolet.github.io/marketing/marketing-confirmacao.html">
+<input type="hidden" name="_gotcha" style="display:none!important">
+
+<section class="card step active">
+<div class="step-kicker">Etapa 1</div><h2 class="step-title">Dados do solicitante</h2><p class="step-help">Informe quem está solicitando a demanda e como a equipe deverá fazer o retorno.</p>
+<div class="field"><label for="gerente">Quem está solicitando? <span class="req">*</span></label>
+<select id="gerente" name="fi-select-gerente" required><option value="">Selecione o gerente</option><option>João Ricardo</option><option>João Neto</option><option>Alan</option><option>Leandro</option></select></div>
+<div class="grid">
+<div class="field"><label for="email">E-mail para retorno <span class="req">*</span></label><input id="email" type="email" name="fi-email-email_retorno" placeholder="nome@empresa.com.br" required></div>
+<div class="field"><label for="telefone">Telefone / WhatsApp</label><input id="telefone" type="tel" name="fi-phone-telefone" placeholder="(65) 99999-9999" inputmode="tel"></div>
+</div>
+</section>
+
+<section class="card step">
+<div class="step-kicker">Etapa 2</div><h2 class="step-title">Sobre a demanda</h2><p class="step-help">Quanto mais claro o briefing, menor a necessidade de ajustes depois da aprovação.</p>
+<div class="field"><label for="campanha">Nome da campanha ou ação <span class="req">*</span></label><input id="campanha" type="text" name="fi-text-nome_campanha" placeholder="Ex.: Feirão Chevrolet Outubro" required></div>
+<div class="field"><label for="descricao">O que você precisa do Marketing? <span class="req">*</span></label><textarea id="descricao" name="fi-text-descricao_demanda" placeholder="Explique o que precisa ser produzido e o contexto da solicitação." required></textarea></div>
+<div class="field"><label for="objetivo">Qual é o objetivo desta ação? <span class="req">*</span></label><textarea id="objetivo" name="fi-text-objetivo" placeholder="Ex.: gerar leads, aumentar fluxo na loja, divulgar condição comercial..." required></textarea></div>
+<div class="grid">
+<div class="field"><label for="dataEntrega">Data desejada para entrega <span class="req">*</span></label><input id="dataEntrega" type="date" name="fi-date-data_entrega" required></div>
+<div class="field"><label>Prioridade <span class="req">*</span></label><div class="choices">
+<div class="choice"><input type="radio" id="prioNormal" name="fi-radio-prioridade" value="Normal" required><label for="prioNormal">Normal</label></div>
+<div class="choice"><input type="radio" id="prioAlta" name="fi-radio-prioridade" value="Alta"><label for="prioAlta">Alta</label></div>
+<div class="choice"><input type="radio" id="prioUrgente" name="fi-radio-prioridade" value="Urgente"><label for="prioUrgente">Urgente</label></div>
+</div><div class="help">Use “Urgente” somente quando houver necessidade operacional de prioridade.</div></div>
+</div>
+</section>
+
+<section class="card step">
+<div class="step-kicker">Etapa 3</div><h2 class="step-title">Material e produção</h2><p class="step-help">Defina o formato desejado e se será necessária gravação.</p>
+<div class="field"><label>O que precisa ser produzido? <span class="req">*</span></label><div class="choices">
+<div class="choice"><input type="checkbox" id="matImagem" name="fi-checkbox-tipo_material[]" value="Imagem"><label for="matImagem">Imagem</label></div>
+<div class="choice"><input type="checkbox" id="matVideo" name="fi-checkbox-tipo_material[]" value="Vídeo"><label for="matVideo">Vídeo</label></div>
+<div class="choice"><input type="checkbox" id="matImpresso" name="fi-checkbox-tipo_material[]" value="Material para impressão"><label for="matImpresso">Impressão</label></div>
+</div><div class="help">Selecione uma ou mais opções.</div></div>
+<div class="field"><label>Será necessária gravação? <span class="req">*</span></label><div class="choices">
+<div class="choice"><input type="radio" id="gravNao" name="fi-radio-necessita_gravacao" value="Não" required><label for="gravNao">Não</label></div>
+<div class="choice"><input type="radio" id="gravInterna" name="fi-radio-necessita_gravacao" value="Sim — equipe interna"><label for="gravInterna">Equipe interna</label></div>
+<div class="choice"><input type="radio" id="gravExterna" name="fi-radio-necessita_gravacao" value="Sim — equipe externa"><label for="gravExterna">Equipe externa</label></div>
+</div></div>
+<div id="gravacaoExtra" class="hidden">
+<div class="notice">Como foi selecionada equipe externa, precisamos de algumas informações para organizar a produção.</div>
+<div class="grid">
+<div class="field"><label for="localGravacao">Local da gravação</label><input id="localGravacao" type="text" name="fi-text-local_gravacao" placeholder="Local / cidade"></div>
+<div class="field"><label for="dataGravacao">Data desejada para gravação</label><input id="dataGravacao" type="date" name="fi-date-data_gravacao"></div>
+<div class="field"><label for="horarioGravacao">Horário desejado</label><input id="horarioGravacao" type="text" name="fi-text-horario_gravacao" placeholder="Ex.: 09:00"></div>
+<div class="field"><label for="observacaoGravacao">Observações</label><input id="observacaoGravacao" type="text" name="fi-text-observacoes_gravacao" placeholder="Veículo, pessoa, estrutura etc."></div>
+</div></div>
+</section>
+
+<section class="card step">
+<div class="step-kicker">Etapa 4</div><h2 class="step-title">Veículo e condição comercial</h2><p class="step-help">Use esta etapa quando a demanda envolver um veículo ou uma oferta comercial.</p>
+<div class="field"><label>A solicitação envolve um veículo específico? <span class="req">*</span></label><div class="choices">
+<div class="choice"><input type="radio" id="veiSim" name="fi-radio-envolve_veiculo" value="Sim" required><label for="veiSim">Sim</label></div>
+<div class="choice"><input type="radio" id="veiNao" name="fi-radio-envolve_veiculo" value="Não"><label for="veiNao">Não</label></div>
+</div></div>
+<div id="veiculoFields" class="hidden"><div class="grid">
+<div class="field"><label for="modelo">Modelo</label><select id="modelo" name="fi-select-modelo_veiculo"><option value="">Selecione</option><option>Onix</option><option>Onix Plus</option><option>Tracker</option><option>Montana</option><option>S10</option><option>Trailblazer</option><option>Spin</option><option>Equinox</option><option>Silverado</option><option>Outro</option></select></div>
+<div class="field"><label for="versao">Versão</label><input id="versao" type="text" name="fi-text-versao_veiculo" placeholder="Ex.: Premier 1.2 Turbo"></div>
+<div class="field"><label for="anoModelo">Ano/modelo</label><input id="anoModelo" type="text" name="fi-text-ano_modelo" placeholder="Ex.: 2026/2026"></div>
+</div></div>
+<div class="field"><label>A divulgação envolve preço, financiamento ou condição comercial? <span class="req">*</span></label><div class="choices">
+<div class="choice"><input type="radio" id="ofertaNao" name="fi-radio-possui_oferta" value="Não" required><label for="ofertaNao">Não</label></div>
+<div class="choice"><input type="radio" id="ofertaSim" name="fi-radio-possui_oferta" value="Sim"><label for="ofertaSim">Sim</label></div>
+</div></div>
+<div id="ofertaFields" class="hidden">
+<div class="warning"><strong>Atenção:</strong> confira os dados comerciais antes de enviar. O Marketing não deve interpretar ou alterar condições de financiamento.</div>
+<div class="grid">
+<div class="field"><label for="preco">Preço à vista</label><input id="preco" type="text" name="fi-text-preco_vista" placeholder="R$ 0,00" inputmode="decimal"></div>
+<div class="field"><label for="entrada">Valor da entrada</label><input id="entrada" type="text" name="fi-text-valor_entrada" placeholder="R$ 0,00" inputmode="decimal"></div>
+<div class="field"><label for="parcelas">Número de parcelas</label><input id="parcelas" type="number" name="fi-number-numero_parcelas" min="1" max="120" placeholder="Ex.: 48"></div>
+<div class="field"><label for="valorParcela">Valor da parcela</label><input id="valorParcela" type="text" name="fi-text-valor_parcela" placeholder="R$ 0,00" inputmode="decimal"></div>
+<div class="field"><label for="juros">Taxa de juros</label><input id="juros" type="text" name="fi-text-taxa_juros" placeholder="Ex.: 1,19% a.m."></div>
+<div class="field"><label for="cet">CET</label><input id="cet" type="text" name="fi-text-cet" placeholder="Informe se aplicável"></div>
+<div class="field"><label for="financiado">Valor financiado</label><input id="financiado" type="text" name="fi-text-valor_financiado" placeholder="R$ 0,00" inputmode="decimal"></div>
+<div class="field"><label for="financeira">Banco / financeira</label><input id="financeira" type="text" name="fi-text-instituicao_financeira" placeholder="Ex.: GM Financial"></div>
+<div class="field"><label for="validadeOferta">Validade da oferta</label><input id="validadeOferta" type="date" name="fi-date-validade_oferta"></div>
+<div class="field full"><label for="juridico">Texto jurídico/comercial obrigatório</label><textarea id="juridico" name="fi-text-texto_juridico" placeholder="Cole aqui o texto/condição que deverá constar na peça."></textarea></div>
+<div class="field full"><label for="obsOferta">Observações sobre a oferta</label><textarea id="obsOferta" name="fi-text-observacoes_oferta" placeholder="Inclua qualquer condição adicional relevante."></textarea></div>
+</div></div>
+</section>
+
+<section class="card step">
+<div class="step-kicker">Etapa 5</div><h2 class="step-title">Canais e referências</h2><p class="step-help">Informe onde o material será usado e envie referências para facilitar o briefing.</p>
+<div class="field"><label>Onde o material será divulgado? <span class="req">*</span></label><div class="choices" style="grid-template-columns:repeat(2,1fr)">
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Instagram Feed" id="c1"><label for="c1">Instagram Feed</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Instagram Stories" id="c2"><label for="c2">Instagram Stories</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Reels" id="c3"><label for="c3">Reels</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="WhatsApp" id="c4"><label for="c4">WhatsApp</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Facebook" id="c5"><label for="c5">Facebook</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Site" id="c6"><label for="c6">Site</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Rádio" id="c7"><label for="c7">Rádio</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="TV" id="c8"><label for="c8">TV</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Outdoor" id="c9"><label for="c9">Outdoor</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Mídia interna" id="c10"><label for="c10">Mídia interna</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Material impresso" id="c11"><label for="c11">Material impresso</label></div>
+<div class="choice"><input type="checkbox" name="fi-checkbox-canais_divulgacao[]" value="Outro" id="c12"><label for="c12">Outro</label></div>
+</div></div>
+<div class="field"><label for="arquivo">Arquivos de referência</label><div class="filebox"><input id="arquivo" type="file" name="fi-file-referencias[]" multiple accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4"><div class="help">Pode anexar imagens, PDFs ou vídeos.</div></div></div>
+<div class="grid">
+<div class="field"><label for="link">Link de referência</label><input id="link" type="url" name="fi-url-link_referencia" placeholder="https://..."></div>
+<div class="field"><label for="descricaoRef">Explique a referência</label><input id="descricaoRef" type="text" name="fi-text-descricao_referencia" placeholder="O que deve ser aproveitado?"></div>
+</div>
+<div class="field"><label for="obs">Alguma informação adicional?</label><textarea id="obs" name="fi-text-observacoes_finais" placeholder="Outras informações que possam ajudar o Marketing."></textarea></div>
+</section>
+
+<section class="card step">
+<div class="step-kicker">Etapa 6</div><h2 class="step-title">Conferência e envio</h2><p class="step-help">Revise as informações e confirme que os dados comerciais foram conferidos.</p>
+<div class="summary" id="summary"></div>
+<div class="field" style="margin-top:16px"><div class="choice"><input type="checkbox" id="confirmInfo" name="fi-checkbox-confirmacao_informacoes" value="Confirmo que as informações fornecidas foram conferidas e estão corretas." required><label for="confirmInfo">Confirmo que as informações comerciais, preços, condições de financiamento e demais dados fornecidos nesta solicitação foram conferidos e estão corretos. <span class="req">*</span></label></div></div>
+<div class="field"><div class="choice"><input type="checkbox" id="confirmPrazo" name="fi-checkbox-ciencia_prazo" value="Ciente de que o prazo de produção começa após a aprovação." required><label for="confirmPrazo">Estou ciente de que o prazo de produção começa após a aprovação da solicitação pelo Diretor de Marketing. <span class="req">*</span></label></div></div>
+<div class="notice">Após o envio, a solicitação seguirá para análise do Diretor de Marketing. A equipe de produção só receberá a demanda depois da aprovação.</div>
+</section>
+
+<div class="actions">
+<button type="button" class="btn secondary" id="prevBtn" style="display:none">← Voltar</button>
+<button type="button" class="btn primary" id="nextBtn">Próxima etapa →</button>
+<button type="submit" class="btn success" id="submitBtn" style="display:none">Enviar solicitação</button>
+</div>
+</form>
+<div class="footer"><strong>Oeste Chevrolet</strong><br>Solicitações comerciais e de comunicação interna</div>
+</main>
+
+<script>
+const form=document.getElementById('marketingForm'),steps=[...document.querySelectorAll('.step')],bar=document.getElementById('progressBar'),label=document.getElementById('progressLabel'),nameEl=document.getElementById('progressName'),next=document.getElementById('nextBtn'),prev=document.getElementById('prevBtn'),submit=document.getElementById('submitBtn'),names=['Solicitante','Demanda','Material','Veículo / oferta','Canais / referências','Conferência'];let current=0;
+function progress(){bar.style.width=((current+1)/steps.length*100)+'%';label.textContent='Etapa '+(current+1)+' de '+steps.length;nameEl.textContent=names[current];prev.style.display=current?'block':'none';next.style.display=current<steps.length-1?'block':'none';submit.style.display=current===steps.length-1?'block':'none';window.scrollTo({top:0,behavior:'smooth'})}
+function validate(){const fields=[...steps[current].querySelectorAll('input,select,textarea')].filter(x=>!x.disabled&&x.offsetParent!==null);for(const x of fields){if(!x.checkValidity()){x.reportValidity();return false}}if(current===2&&!document.querySelector('input[name="fi-checkbox-tipo_material[]"]:checked')){alert('Selecione pelo menos um tipo de material.');return false}if(current===4&&!document.querySelector('input[name="fi-checkbox-canais_divulgacao[]"]:checked')){alert('Selecione pelo menos um canal.');return false}if(current===5)summary();return true}
+function go(n){if(n<0||n>=steps.length)return;steps[current].classList.remove('active');current=n;steps[current].classList.add('active');progress()}
+next.onclick=()=>{if(validate())go(current+1)};prev.onclick=()=>go(current-1);
+document.querySelectorAll('input[name="fi-radio-necessita_gravacao"]').forEach(r=>r.onchange=()=>document.getElementById('gravacaoExtra').classList.toggle('hidden',!document.getElementById('gravExterna').checked));
+document.querySelectorAll('input[name="fi-radio-envolve_veiculo"]').forEach(r=>r.onchange=()=>document.getElementById('veiculoFields').classList.toggle('hidden',!document.getElementById('veiSim').checked));
+document.querySelectorAll('input[name="fi-radio-possui_oferta"]').forEach(r=>r.onchange=()=>document.getElementById('ofertaFields').classList.toggle('hidden',!document.getElementById('ofertaSim').checked));
+document.getElementById('telefone').oninput=function(){let v=this.value.replace(/\D/g,'').slice(0,11);if(v.length<=10)v=v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{4})(\d)/,'$1-$2');else v=v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2');this.value=v};
+function selected(name){return [...document.querySelectorAll('input[name="'+name+'"]:checked')].map(x=>x.value).join(', ')||'—'}
+function summary(){document.getElementById('summary').innerHTML='<strong>Solicitante:</strong> '+document.getElementById('gerente').value+'<br><strong>Campanha:</strong> '+document.getElementById('campanha').value+'<br><strong>Prazo:</strong> '+document.getElementById('dataEntrega').value+'<br><strong>Prioridade:</strong> '+selected('fi-radio-prioridade')+'<br><strong>Material:</strong> '+selected('fi-checkbox-tipo_material[]')+'<br><strong>Canais:</strong> '+selected('fi-checkbox-canais_divulgacao[]')}
+form.onsubmit=e=>{if(!validate()){e.preventDefault();return}submit.disabled=true;submit.textContent='Enviando...';next.disabled=true;prev.disabled=true};progress();
+</script>
+</body>
+</html>
