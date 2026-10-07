@@ -1,4 +1,6 @@
 const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
+const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
+const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
 
 function corsHeaders(origin) {
   return {
@@ -21,83 +23,35 @@ function json(data, status = 200, origin = ALLOWED_ORIGIN) {
 }
 
 function b64url(input) {
-  return btoa(input)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function unb64(input) {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
-  return atob(
-    normalized + "=".repeat((4 - (normalized.length % 4)) % 4)
-  );
+  return atob(normalized + "=".repeat((4 - (normalized.length % 4)) % 4));
 }
 
 async function sign(payload, secret) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    {
-      name: "HMAC",
-      hash: "SHA-256",
-    },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(payload)
-  );
-
-  return b64url(
-    String.fromCharCode(...new Uint8Array(signature))
-  );
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  return b64url(String.fromCharCode(...new Uint8Array(signature)));
 }
 
 async function makeToken(secret) {
-  const payload = b64url(
-    JSON.stringify({
-      exp: Date.now() + 8 * 60 * 60 * 1000,
-    })
-  );
-
-  const signature = await sign(payload, secret);
-
-  return payload + "." + signature;
+  const payload = b64url(JSON.stringify({exp: Date.now() + 8 * 60 * 60 * 1000}));
+  return payload + "." + await sign(payload, secret);
 }
 
 async function validToken(request, env) {
-  const authorization =
-    request.headers.get("Authorization") || "";
-
-  if (!authorization.startsWith("Bearer ")) {
-    return false;
-  }
-
-  const token = authorization.slice(7);
-  const parts = token.split(".");
-
-  if (parts.length !== 2) {
-    return false;
-  }
-
+  const authorization = request.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) return false;
+  const parts = authorization.slice(7).split(".");
+  if (parts.length !== 2) return false;
   const [payload, signature] = parts;
-
   try {
     const data = JSON.parse(unb64(payload));
-
-    if (!data.exp || data.exp < Date.now()) {
-      return false;
-    }
-
-    const expected = await sign(
-      payload,
-      env.SESSION_SECRET
-    );
-
+    if (!data.exp || data.exp < Date.now()) return false;
+    const expected = await sign(payload, env.SESSION_SECRET);
     return expected === signature;
   } catch {
     return false;
@@ -108,279 +62,226 @@ function getOrigin(env) {
   return env.PANEL_ORIGIN || ALLOWED_ORIGIN;
 }
 
+function field(blocks, ...keys) {
+  for (const key of keys) {
+    const value = blocks?.[key];
+    if (value !== undefined && value !== null && value !== "") {
+      return Array.isArray(value) ? value.join(", ") : typeof value === "object" ? JSON.stringify(value) : String(value);
+    }
+  }
+  return "";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function getRequester(submission) {
+  const b = submission?.blocks || {};
+  return {
+    name: field(b,"fi-select-gerente","gerente") || field(b.sender,"fullName") || "Solicitante",
+    email: field(b,"fi-email-email_retorno","email_retorno") || field(b.sender,"email"),
+    phone: field(b,"fi-phone-telefone","telefone") || field(b.sender,"phone"),
+  };
+}
+
+function getCampaign(submission) {
+  const b = submission?.blocks || {};
+  return field(b,"fi-text-nome_campanha","nome_campanha") || "Sem campanha";
+}
+
+function buildDemandRows(submission) {
+  const b = submission?.blocks || {};
+  const rows = [
+    ["Solicitante", field(b,"fi-select-gerente","gerente") || field(b.sender,"fullName")],
+    ["E-mail", field(b,"fi-email-email_retorno","email_retorno") || field(b.sender,"email")],
+    ["Telefone", field(b,"fi-phone-telefone","telefone") || field(b.sender,"phone")],
+    ["Prazo", field(b,"fi-date-data_entrega","data_entrega")],
+    ["Prioridade", field(b,"fi-radio-prioridade","prioridade") || "Normal"],
+    ["Material", field(b,"fi-checkbox-tipo_material[]","tipo_material")],
+    ["Canais", field(b,"fi-checkbox-canais_divulgacao[]","canais_divulgacao")],
+    ["Veículo", field(b,"fi-select-modelo_veiculo","modelo_veiculo")],
+    ["Versão / ano", [field(b,"fi-text-versao_veiculo","versao_veiculo"),field(b,"fi-text-ano_modelo","ano_modelo")].filter(Boolean).join(" · ")],
+    ["Condição comercial", field(b,"fi-radio-possui_oferta","possui_oferta")],
+    ["Preço à vista", field(b,"fi-text-preco_vista","preco_vista")],
+    ["Objetivo", field(b,"fi-text-objetivo","objetivo")],
+    ["Descrição", field(b,"fi-text-descricao_demanda","descricao_demanda")],
+    ["Observações", field(b,"fi-text-observacoes_finais","observacoes_finais")]
+  ];
+  return rows.filter(([,value]) => value).map(([label,value]) => '<tr><td style="padding:8px 10px;border:1px solid #dce6ed;font-weight:700;width:180px">'+escapeHtml(label)+'</td><td style="padding:8px 10px;border:1px solid #dce6ed">'+escapeHtml(value)+'</td></tr>').join("");
+}
+
+function buildFiles(submission) {
+  return (submission?.files || []).map(file => {
+    const url = file.url || file.downloadUrl || file.download_url;
+    return url ? '<li><a href="'+escapeHtml(url)+'">'+escapeHtml(file.name || "Arquivo")+'</a></li>' : "";
+  }).filter(Boolean).join("");
+}
+
+async function fetchSubmission(env, id) {
+  if (!env.FORMINIT_API_KEY || !env.FORMINIT_FORM_ID) {
+    throw new Error("Configuração do Forminit incompleta.");
+  }
+  let page = 1;
+  while (page <= 50) {
+    const formUrl = new URL("https://api.forminit.com/v1/forms/" + env.FORMINIT_FORM_ID);
+    formUrl.searchParams.set("page", String(page));
+    formUrl.searchParams.set("size", "100");
+    formUrl.searchParams.set("files", "true");
+    formUrl.searchParams.set("timezone", "America/Cuiaba");
+    const response = await fetch(formUrl,{headers:{"X-API-Key":env.FORMINIT_API_KEY,Accept:"application/json"}});
+    const data = await response.json().catch(()=>({}));
+    if (!response.ok) throw new Error(data?.message || "Falha ao consultar Forminit.");
+    const submissions = data?.data?.submissions || [];
+    const found = submissions.find(item => item.id === id);
+    if (found) return found;
+    const pagination = data?.data?.pagination || {};
+    if (!pagination.lastPage || page >= pagination.lastPage) break;
+    page++;
+  }
+  throw new Error("Solicitação não encontrada no Forminit.");
+}
+
+async function sendEmail(env,{to,subject,html,replyTo,idempotencyKey}) {
+  if (!env.RESEND_API_KEY) throw new Error("RESEND_API_KEY não configurado no Worker.");
+  const from = env.EMAIL_FROM || DEFAULT_FROM_EMAIL;
+  const payload = {from,to:[to],subject,html};
+  if (replyTo) payload.reply_to = [replyTo];
+  const response = await fetch("https://api.resend.com/emails",{
+    method:"POST",
+    headers:{
+      "Authorization":"Bearer "+env.RESEND_API_KEY,
+      "Content-Type":"application/json",
+      "Idempotency-Key":idempotencyKey
+    },
+    body:JSON.stringify(payload)
+  });
+  const data = await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(data?.message || data?.error || "Falha ao enviar e-mail.");
+  return data;
+}
+
+function emailLayout(title, intro, body) {
+  return '<div style="font-family:Arial,Helvetica,sans-serif;background:#f3f7fa;padding:28px;color:#193244"><div style="max-width:720px;margin:auto;background:#fff;border:1px solid #dce6ed;border-radius:14px;padding:28px"><div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b2e4f">Oeste Chevrolet · Painel de Marketing</div><h1 style="color:#0b2e4f;font-size:24px;margin:12px 0 8px">'+escapeHtml(title)+'</h1><p style="line-height:1.6">'+escapeHtml(intro)+'</p>'+body+'</div></div>';
+}
+
+function statusEmail(submission,status,extra) {
+  const campaign = getCampaign(submission);
+  const requester = getRequester(submission);
+  const rows = buildDemandRows(submission);
+  const files = buildFiles(submission);
+  const fileBlock = files ? '<h3 style="color:#0b2e4f">Arquivos</h3><ul>'+files+'</ul>' : "";
+  if (status === "in_review") {
+    return {
+      to: requester.email,
+      replyTo: env.MARKETING_EMAIL || DEFAULT_MARKETING_EMAIL,
+      subject: "[Oeste Chevrolet] Solicitação em análise — " + campaign,
+      html: emailLayout("Sua solicitação está em análise", "Olá "+requester.name+". Recebemos sua demanda e ela está agora em análise pela equipe responsável.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p><p>Você receberá uma nova comunicação quando houver uma decisão.</p><h3 style="color:#0b2e4f">Resumo da demanda</h3><table style="width:100%;border-collapse:collapse">'+rows+"</table>")
+    };
+  }
+  if (status === "approved") {
+    const to = env.MARKETING_EMAIL || DEFAULT_MARKETING_EMAIL;
+    return {
+      to,
+      replyTo: requester.email,
+      subject: "[Marketing] Nova demanda aprovada — " + campaign,
+      html: emailLayout("Nova demanda aprovada", "A solicitação abaixo foi aprovada no Painel de Marketing e está liberada para execução.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p><table style="width:100%;border-collapse:collapse">'+rows+"</table>"+fileBlock)
+    };
+  }
+  if (status === "rejected") {
+    const director = extra.directorName;
+    const note = extra.note;
+    return {
+      to: requester.email,
+      replyTo: env.MARKETING_EMAIL || DEFAULT_MARKETING_EMAIL,
+      subject: "[Oeste Chevrolet] Solicitação reprovada — " + campaign,
+      html: emailLayout("Sua solicitação foi reprovada", "Olá "+requester.name+". A solicitação abaixo não foi aprovada neste momento.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p><div style="margin:18px 0;padding:16px;background:#fdeaea;border-left:4px solid #bd3030;border-radius:8px"><strong>Mensagem do diretor '+escapeHtml(director)+':</strong><p style="white-space:pre-wrap;margin-bottom:0">'+escapeHtml(note)+'</p></div><h3 style="color:#0b2e4f">Resumo da demanda</h3><table style="width:100%;border-collapse:collapse">'+rows+"</table>")
+    };
+  }
+  if (status === "done") {
+    return {
+      to: requester.email,
+      replyTo: env.MARKETING_EMAIL || DEFAULT_MARKETING_EMAIL,
+      subject: "[Oeste Chevrolet] Solicitação concluída — " + campaign,
+      html: emailLayout("Sua solicitação foi concluída", "Olá "+requester.name+". A equipe de Marketing informou que a demanda foi concluída.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p>')
+    };
+  }
+  return null;
+}
+
 export default {
   async fetch(request, env) {
     const origin = getOrigin(env);
     const url = new URL(request.url);
-
-    // CORS preflight.
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders(origin),
-      });
-    }
-
+    if (request.method === "OPTIONS") return new Response(null,{status:204,headers:corsHeaders(origin)});
     try {
-      // Health check.
-      if (
-        url.pathname === "/api/health" &&
-        request.method === "GET"
-      ) {
-        return json(
-          {
-            ok: true,
-            service: "oeste-marketing-api",
-          },
-          200,
-          origin
-        );
-      }
+      if (url.pathname === "/api/health" && request.method === "GET") return json({ok:true,service:"oeste-marketing-api"},200,origin);
 
-      // Login.
-      if (
-        url.pathname === "/api/login" &&
-        request.method === "POST"
-      ) {
+      if (url.pathname === "/api/login" && request.method === "POST") {
         let body;
-
-        try {
-          body = await request.json();
-        } catch {
-          return json(
-            { message: "JSON inválido." },
-            400,
-            origin
-          );
-        }
-
-        const password = body?.password;
-
-        if (
-          !password ||
-          password !== env.PANEL_PASSWORD
-        ) {
-          return json(
-            { message: "Senha inválida." },
-            401,
-            origin
-          );
-        }
-
-        if (!env.SESSION_SECRET) {
-          return json(
-            { message: "SESSION_SECRET não configurado." },
-            500,
-            origin
-          );
-        }
-
-        return json(
-          {
-            token: await makeToken(
-              env.SESSION_SECRET
-            ),
-          },
-          200,
-          origin
-        );
+        try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
+        if (!body?.password || body.password !== env.PANEL_PASSWORD) return json({message:"Senha inválida."},401,origin);
+        if (!env.SESSION_SECRET) return json({message:"SESSION_SECRET não configurado."},500,origin);
+        return json({token:await makeToken(env.SESSION_SECRET)},200,origin);
       }
 
-      // Todas as outras rotas exigem autenticação.
-      if (!(await validToken(request, env))) {
-        return json(
-          { message: "Não autorizado." },
-          401,
-          origin
-        );
+      if (!(await validToken(request,env))) return json({message:"Não autorizado."},401,origin);
+
+      if (url.pathname === "/api/submissions" && request.method === "GET") {
+        if (!env.FORMINIT_API_KEY || !env.FORMINIT_FORM_ID) return json({message:"Configuração do Forminit incompleta."},500,origin);
+        const formUrl = new URL("https://api.forminit.com/v1/forms/"+env.FORMINIT_FORM_ID);
+        formUrl.searchParams.set("size","100");
+        formUrl.searchParams.set("files","true");
+        formUrl.searchParams.set("timezone","America/Cuiaba");
+        const formResponse = await fetch(formUrl,{headers:{"X-API-Key":env.FORMINIT_API_KEY,Accept:"application/json"}});
+        const formData = await formResponse.json().catch(()=>({}));
+        if (!formResponse.ok) return json({message:formData?.message||"Falha ao consultar Forminit."},502,origin);
+        const submissions=formData?.data?.submissions||[];
+        const ids=submissions.map(s=>s.id).filter(Boolean);
+        const statuses={};
+        if(ids.length&&env.DB){
+          const placeholders=ids.map(()=>"?").join(",");
+          const result=await env.DB.prepare("SELECT submission_id,status,note FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
+          for(const row of result.results||[]) statuses[row.submission_id]=row;
+        }
+        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||""})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
-      // Buscar solicitações do Forminit.
-      if (
-        url.pathname === "/api/submissions" &&
-        request.method === "GET"
-      ) {
-        if (
-          !env.FORMINIT_API_KEY ||
-          !env.FORMINIT_FORM_ID
-        ) {
-          return json(
-            {
-              message:
-                "Configuração do Forminit incompleta.",
-            },
-            500,
-            origin
-          );
-        }
-
-        const formUrl = new URL(
-          "https://api.forminit.com/v1/forms/" +
-            env.FORMINIT_FORM_ID
-        );
-
-        formUrl.searchParams.set("size", "100");
-        formUrl.searchParams.set("files", "true");
-        formUrl.searchParams.set(
-          "timezone",
-          "America/Cuiaba"
-        );
-
-        const formResponse = await fetch(formUrl, {
-          method: "GET",
-          headers: {
-            "X-API-Key": env.FORMINIT_API_KEY,
-            Accept: "application/json",
-          },
-        });
-
-        const formData =
-          await formResponse.json().catch(() => ({}));
-
-        if (!formResponse.ok) {
-          return json(
-            {
-              message:
-                formData?.message ||
-                "Falha ao consultar Forminit.",
-            },
-            502,
-            origin
-          );
-        }
-
-        const submissions =
-          formData?.data?.submissions || [];
-
-        const ids = submissions
-          .map((submission) => submission.id)
-          .filter(Boolean);
-
-        const statuses = {};
-
-        if (ids.length && env.DB) {
-          const placeholders = ids
-            .map(() => "?")
-            .join(",");
-
-          const result = await env.DB
-            .prepare(
-              `SELECT submission_id, status, note
-               FROM request_status
-               WHERE submission_id IN (${placeholders})`
-            )
-            .bind(...ids)
-            .all();
-
-          for (const row of result.results || []) {
-            statuses[row.submission_id] = row;
-          }
-        }
-
-        return json(
-          {
-            submissions: submissions.map(
-              (submission) => ({
-                ...submission,
-                panelStatus:
-                  statuses[submission.id]?.status ||
-                  "pending",
-                panelNote:
-                  statuses[submission.id]?.note ||
-                  "",
-              })
-            ),
-            pagination:
-              formData?.data?.pagination || {},
-          },
-          200,
-          origin
-        );
-      }
-
-      // Atualizar status.
-      if (
-        url.pathname === "/api/status" &&
-        request.method === "POST"
-      ) {
+      if (url.pathname === "/api/status" && request.method === "POST") {
         let body;
+        try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
+        const id=body?.id,status=body?.status,note=String(body?.note||"").trim(),directorName=String(body?.directorName||"").trim();
+        const allowed=["pending","in_review","approved","rejected","done"];
+        if(!id||!allowed.includes(status)) return json({message:"Status inválido."},400,origin);
+        if(!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
 
-        try {
-          body = await request.json();
-        } catch {
-          return json(
-            { message: "JSON inválido." },
-            400,
-            origin
-          );
-        }
+        const currentResult=await env.DB.prepare("SELECT status,updated_at FROM request_status WHERE submission_id=?").bind(id).first();
+        const previousStatus=currentResult?.status||"pending";
+        const previousUpdatedAt=currentResult?.updated_at||"never";
+        if(previousStatus===status) return json({ok:true,unchanged:true,status},200,origin);
 
-        const id = body?.id;
-        const status = body?.status;
-        const note = body?.note || "";
+        if(status==="rejected" && (!directorName || !note)) return json({message:"Para reprovar, informe o nome do diretor e a mensagem ao solicitante."},400,origin);
 
-        const allowedStatuses = [
-          "pending",
-          "in_review",
-          "approved",
-          "rejected",
-          "done",
-        ];
+        const submission=await fetchSubmission(env,id);
+        const email=statusEmail(submission,status,{directorName,note});
+        if(!email || !email.to) return json({message:"Não foi possível determinar o destinatário do e-mail."},400,origin);
+        const emailIdempotencyKey="status-"+status+"-"+id+"-"+previousUpdatedAt;
+        await sendEmail(env,{...email,idempotencyKey:emailIdempotencyKey});
 
-        if (
-          !id ||
-          !allowedStatuses.includes(status)
-        ) {
-          return json(
-            { message: "Status inválido." },
-            400,
-            origin
-          );
-        }
+        await env.DB.prepare(`INSERT INTO request_status (submission_id,status,note,updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(submission_id) DO UPDATE SET status=excluded.status,note=excluded.note,updated_at=CURRENT_TIMESTAMP`).bind(id,status,note).run();
 
-        if (!env.DB) {
-          return json(
-            { message: "Banco D1 não configurado." },
-            500,
-            origin
-          );
-        }
-
-        await env.DB.prepare(
-          `INSERT INTO request_status
-             (submission_id, status, note, updated_at)
-           VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(submission_id)
-           DO UPDATE SET
-             status = excluded.status,
-             note = excluded.note,
-             updated_at = CURRENT_TIMESTAMP`
-        )
-          .bind(id, status, note)
-          .run();
-
-        return json(
-          { ok: true },
-          200,
-          origin
-        );
+        return json({ok:true,status,emailSent:true},200,origin);
       }
 
-      return json(
-        { message: "Rota não encontrada." },
-        404,
-        origin
-      );
-    } catch (error) {
-      return json(
-        {
-          message:
-            error?.message ||
-            "Erro interno no Worker.",
-        },
-        500,
-        origin
-      );
+      return json({message:"Rota não encontrada."},404,origin);
+    } catch(error) {
+      return json({message:error?.message||"Erro interno no Worker."},500,origin);
     }
-  },
+  }
 };
