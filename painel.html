@@ -53,6 +53,29 @@
     </section>
   </main>
 </div>
+
+<div id="rejectModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="rejectTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <div class="brand">Reprovação</div>
+        <h2 id="rejectTitle">Reprovar solicitação</h2>
+      </div>
+      <button id="rejectClose" class="modal-close" type="button" aria-label="Fechar">×</button>
+    </div>
+    <p id="rejectCampaign" class="modal-context"></p>
+    <label for="directorName">Diretor responsável</label>
+    <input id="directorName" type="text" placeholder="Nome do diretor" maxlength="120" autocomplete="name">
+    <label for="rejectMessage">Mensagem ao solicitante</label>
+    <textarea id="rejectMessage" rows="6" maxlength="2000" placeholder="Explique o motivo da reprovação e, se necessário, indique o que precisa ser ajustado."></textarea>
+    <div class="modal-actions">
+      <button id="rejectCancel" class="btn ghost" type="button">Cancelar</button>
+      <button id="rejectConfirm" class="btn danger" type="button">Reprovar e enviar e-mail</button>
+    </div>
+    <div id="rejectError" class="error hidden"></div>
+  </div>
+</div>
+
 <script src="js/painel.js"></script>
 </body>
 </html>
