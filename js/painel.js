@@ -1,3 +1,4 @@
+window.MARKETING_API_BASE = "https://oeste-marketing-api.interno-oeste.workers.dev";
 const API_BASE=(window.MARKETING_API_BASE||'').replace(/\/$/,'');const DEMO=!API_BASE;const DEMO_PASSWORD='demo';let token=sessionStorage.getItem('marketing_panel_token')||'';let records=[];let selectedId=null;
 const $=s=>document.querySelector(s);const loginView=$('#loginView'),appView=$('#appView'),list=$('#requestList');
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
