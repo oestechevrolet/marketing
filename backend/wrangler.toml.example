@@ -1,0 +1,17 @@
+name = "oeste-marketing-api"
+main = "worker.js"
+compatibility_date = "2026-10-07"
+
+[vars]
+FORMINIT_FORM_ID = "vct7pwqa6ed"
+PANEL_ORIGIN = "https://oestechevrolet.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "oeste-marketing"
+database_id = "COLOQUE_O_ID_DA_D1_AQUI"
+
+# Configure these as encrypted Worker secrets:
+# FORMINIT_API_KEY
+# PANEL_PASSWORD
+# SESSION_SECRET
