@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#0b2e4f">
+<title>Painel de Marketing — Oeste Chevrolet</title>
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+<div id="loginView" class="login-shell">
+  <div class="login-card">
+    <div class="brand">Oeste Chevrolet</div>
+    <h1>Painel de Marketing</h1>
+    <p>Acesso restrito à gestão das solicitações.</p>
+    <form id="loginForm">
+      <label for="password">Senha do painel</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">Entrar</button>
+      <div id="loginError" class="error hidden"></div>
+    </form>
+  </div>
+</div>
+
+<div id="appView" class="app hidden">
+  <header class="topbar">
+    <div><div class="brand">Oeste Chevrolet</div><h1>Painel de Marketing</h1></div>
+    <div class="top-actions"><button id="refreshBtn" class="btn ghost">Atualizar</button><button id="logoutBtn" class="btn ghost">Sair</button></div>
+  </header>
+  <main class="container">
+    <div id="modeNotice" class="notice hidden"></div>
+    <section class="stats">
+      <div class="stat"><span>Total</span><strong id="statTotal">0</strong></div>
+      <div class="stat pending"><span>Pendentes</span><strong id="statPending">0</strong></div>
+      <div class="stat review"><span>Em análise</span><strong id="statReview">0</strong></div>
+      <div class="stat approved"><span>Aprovadas</span><strong id="statApproved">0</strong></div>
+      <div class="stat rejected"><span>Reprovadas</span><strong id="statRejected">0</strong></div>
+    </section>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Buscar campanha, solicitante ou e-mail...">
+      <select id="statusFilter"><option value="">Todos os status</option><option value="pending">Pendentes</option><option value="in_review">Em análise</option><option value="approved">Aprovadas</option><option value="rejected">Reprovadas</option><option value="done">Concluídas</option></select>
+      <select id="priorityFilter"><option value="">Todas as prioridades</option><option>Normal</option><option>Alta</option><option>Urgente</option></select>
+    </section>
+
+    <section class="content-grid">
+      <div class="list-card">
+        <div class="list-head"><strong>Solicitações</strong><span id="resultCount">0</span></div>
+        <div id="requestList" class="request-list"></div>
+      </div>
+      <aside id="detail" class="detail-card">
+        <div class="empty-detail">Selecione uma solicitação para visualizar os detalhes.</div>
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="js/painel.js"></script>
+</body>
+</html>
