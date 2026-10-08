@@ -2,6 +2,14 @@ const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
 const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
 const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
 
+async function ensureDriveColumn(env) {
+  if (!env.DB) return;
+  const columns = await env.DB.prepare("PRAGMA table_info(request_status)").all();
+  if (!(columns.results || []).some(c => c.name === "drive_url")) {
+    await env.DB.prepare("ALTER TABLE request_status ADD COLUMN drive_url TEXT").run();
+  }
+}
+
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin,
@@ -206,11 +214,13 @@ function statusEmail(env,submission,status,extra) {
     };
   }
   if (status === "done") {
+    const driveUrl = extra.driveUrl || "";
+    const driveBlock = driveUrl ? '<div style="margin:20px 0;padding:18px;background:#eef6fb;border:1px solid #cfe3f0;border-radius:10px"><strong style="color:#0b2e4f">Materiais da demanda</strong><p style="margin:8px 0 14px">Os materiais finais estão disponíveis na pasta do Google Drive.</p><a href="'+escapeHtml(driveUrl)+'" style="display:inline-block;background:#0b2e4f;color:#fff;text-decoration:none;padding:11px 16px;border-radius:8px;font-weight:700">Abrir materiais no Google Drive</a></div>' : "";
     return {
       to: requester.email,
       replyTo: env.MARKETING_EMAIL || DEFAULT_MARKETING_EMAIL,
       subject: "[Oeste Chevrolet] Solicitação concluída — " + campaign,
-      html: emailLayout("Sua solicitação foi concluída", "Olá "+requester.name+". A equipe de Marketing informou que a demanda foi concluída.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p>')
+      html: emailLayout("Sua solicitação foi concluída", "Olá "+requester.name+". A equipe de Marketing informou que a demanda foi concluída.", '<p><strong>Campanha:</strong> '+escapeHtml(campaign)+'</p>'+driveBlock)
     };
   }
   return null;
@@ -235,6 +245,7 @@ export default {
       if (!(await validToken(request,env))) return json({message:"Não autorizado."},401,origin);
 
       if (url.pathname === "/api/submissions" && request.method === "GET") {
+        await ensureDriveColumn(env);
         if (!env.FORMINIT_API_KEY || !env.FORMINIT_FORM_ID) return json({message:"Configuração do Forminit incompleta."},500,origin);
         const formUrl = new URL("https://api.forminit.com/v1/forms/"+env.FORMINIT_FORM_ID);
         formUrl.searchParams.set("size","100");
@@ -248,16 +259,31 @@ export default {
         const statuses={};
         if(ids.length&&env.DB){
           const placeholders=ids.map(()=>"?").join(",");
-          const result=await env.DB.prepare("SELECT submission_id,status,note FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
+          const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
         return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||""})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
+      if (url.pathname === "/api/drive" && request.method === "POST") {
+        await ensureDriveColumn(env);
+        if (!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
+        let body;
+        try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
+        const id=body?.id,driveUrl=String(body?.driveUrl||"").trim();
+        if(!id) return json({message:"Solicitação inválida."},400,origin);
+        if(driveUrl){
+          try { const parsed=new URL(driveUrl); if(!["drive.google.com","docs.google.com"].includes(parsed.hostname)) throw new Error(); }
+          catch { return json({message:"Informe um link válido do Google Drive."},400,origin); }
+        }
+        await env.DB.prepare("INSERT INTO request_status (submission_id,status,note,drive_url,updated_at) VALUES (?, COALESCE((SELECT status FROM request_status WHERE submission_id=?),'pending'), COALESCE((SELECT note FROM request_status WHERE submission_id=?),''), ?, CURRENT_TIMESTAMP) ON CONFLICT(submission_id) DO UPDATE SET drive_url=excluded.drive_url,updated_at=CURRENT_TIMESTAMP").bind(id,id,id,driveUrl).run();
+        return json({ok:true,driveUrl},200,origin);
+      }
+
       if (url.pathname === "/api/status" && request.method === "POST") {
         let body;
         try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
-        const id=body?.id,status=body?.status,note=String(body?.note||"").trim(),directorName=String(body?.directorName||"").trim();
+        const id=body?.id,status=body?.status,note=String(body?.note||"").trim(),directorName=String(body?.directorName||"").trim(),driveUrl=String(body?.driveUrl||"").trim();
         const allowed=["pending","in_review","approved","rejected","done"];
         if(!id||!allowed.includes(status)) return json({message:"Status inválido."},400,origin);
         if(!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
@@ -268,15 +294,20 @@ export default {
         if(previousStatus===status) return json({ok:true,unchanged:true,status},200,origin);
 
         if(status==="rejected" && (!directorName || !note)) return json({message:"Para reprovar, informe o nome do diretor e a mensagem ao solicitante."},400,origin);
+        if(status==="done" && !driveUrl) return json({message:"Informe e salve o link do Google Drive antes de concluir a demanda."},400,origin);
+        if(driveUrl){
+          try { const parsed=new URL(driveUrl); if(!["drive.google.com","docs.google.com"].includes(parsed.hostname)) throw new Error(); }
+          catch { return json({message:"Informe um link válido do Google Drive."},400,origin); }
+        }
 
         const submission=await fetchSubmission(env,id);
-        const email=statusEmail(env,submission,status,{directorName,note});
+        const email=statusEmail(env,submission,status,{directorName,note,driveUrl});
         if(!email || !email.to) return json({message:"Não foi possível determinar o destinatário do e-mail."},400,origin);
         const emailIdempotencyKey="status-"+status+"-"+id+"-"+previousUpdatedAt;
         await sendEmail(env,{...email,idempotencyKey:emailIdempotencyKey});
 
-        await env.DB.prepare(`INSERT INTO request_status (submission_id,status,note,updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-          ON CONFLICT(submission_id) DO UPDATE SET status=excluded.status,note=excluded.note,updated_at=CURRENT_TIMESTAMP`).bind(id,status,note).run();
+        await env.DB.prepare(`INSERT INTO request_status (submission_id,status,note,drive_url,updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(submission_id) DO UPDATE SET status=excluded.status,note=excluded.note,drive_url=excluded.drive_url,updated_at=CURRENT_TIMESTAMP`).bind(id,status,note,driveUrl).run();
 
         return json({ok:true,status,emailSent:true},200,origin);
       }
