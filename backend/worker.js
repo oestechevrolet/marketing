@@ -1,7 +1,7 @@
 const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
 const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
 const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
-const WORKER_VERSION = "attachments-v3";
+const WORKER_VERSION = "attachments-v4";
 
 async function ensureDriveColumn(env) {
   if (!env.DB) return;
@@ -305,7 +305,7 @@ export default {
           const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:normalizeFiles(s)})),pagination:formData?.data?.pagination||{}},200,origin);
+        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:Array.isArray(s.files)?s.files:normalizeFiles(s),fileDebug:{hasFilesProperty:Object.prototype.hasOwnProperty.call(s,"files"),filesType:Array.isArray(s.files)?"array":typeof s.files,filesCount:Array.isArray(s.files)?s.files.length:0,blockFileKeys:Object.keys(s.blocks||{}).filter(k=>/file|arquivo|attachment|anexo/i.test(k))}})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
