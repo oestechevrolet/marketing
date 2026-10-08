@@ -84,7 +84,8 @@ function escapeHtml(value) {
 function getRequester(submission) {
   const b = submission?.blocks || {};
   return {
-    name: field(b,"fi-select-gerente","gerente") || field(b.sender,"fullName") || "Solicitante",
+    name: field(b,"fi-text-nome_solicitante","nome_solicitante") || field(b.sender,"fullName") || "Solicitante",
+    concessionaria: field(b,"fi-select-concessionaria","concessionaria") || "",
     email: field(b,"fi-email-email_retorno","email_retorno") || field(b.sender,"email"),
     phone: field(b,"fi-phone-telefone","telefone") || field(b.sender,"phone"),
   };
@@ -98,7 +99,8 @@ function getCampaign(submission) {
 function buildDemandRows(submission) {
   const b = submission?.blocks || {};
   const rows = [
-    ["Solicitante", field(b,"fi-select-gerente","gerente") || field(b.sender,"fullName")],
+    ["Concessionária", field(b,"fi-select-concessionaria","concessionaria")],
+    ["Solicitante", field(b,"fi-text-nome_solicitante","nome_solicitante") || field(b.sender,"fullName")],
     ["E-mail", field(b,"fi-email-email_retorno","email_retorno") || field(b.sender,"email")],
     ["Telefone", field(b,"fi-phone-telefone","telefone") || field(b.sender,"phone")],
     ["Prazo", field(b,"fi-date-data_entrega","data_entrega")],
