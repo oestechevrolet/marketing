@@ -106,37 +106,39 @@ function getCampaign(submission) {
 }
 
 function normalizeFiles(submission) {
-  const found = [];
-  const add = (item, fallbackLabel = "") => {
+  const urls = [];
+  const add = (item) => {
     if (!item) return;
     if (Array.isArray(item)) {
-      item.forEach(x => add(x, fallbackLabel));
+      item.forEach(add);
       return;
     }
     if (typeof item === "string") {
-      if (item.startsWith("http://") || item.startsWith("https://")) found.push({url:item,name:fallbackLabel||"Arquivo"});
+      if (/^https?:\\/\\//i.test(item)) urls.push(item);
       return;
     }
     if (typeof item !== "object") return;
-    const url = item.url || item.file || item.downloadUrl || item.download_url || item.href || item.link || "";
-    const name = item.name || item.filename || item.originalName || item.original_name || fallbackLabel || "Arquivo";
-    if (url) found.push({...item,url,name});
+
+    const direct = item.url || item.file || item.downloadUrl || item.download_url || item.href || item.link;
+    if (typeof direct === "string" && /^https?:\\/\\//i.test(direct)) {
+      urls.push(direct);
+      return;
+    }
+
+    for (const value of Object.values(item)) add(value);
   };
 
+  // Forminit documents submission.files[].url as the direct download URL.
+  // Keep only the generated URL; the original filename/type are unnecessary in the panel.
   add(submission?.files);
   add(submission?.attachments);
 
   const blocks = submission?.blocks || {};
   for (const [key, value] of Object.entries(blocks)) {
-    if (/file|arquivo|attachment|anexo/i.test(key)) add(value, key.replace(/^fi-file-/, "").replace(/\[\]$/,""));
+    if (/file|arquivo|attachment|anexo/i.test(key)) add(value);
   }
 
-  const unique = new Map();
-  for (const file of found) {
-    const key = file.url || (file.name + "|" + (file.size || ""));
-    if (!unique.has(key)) unique.set(key, file);
-  }
-  return [...unique.values()];
+  return [...new Set(urls)].map(url => ({url}));
 }
 
 function buildDemandRows(submission) {
