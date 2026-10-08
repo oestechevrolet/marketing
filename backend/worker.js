@@ -45,24 +45,24 @@ async function sign(payload, secret) {
   return b64url(String.fromCharCode(...new Uint8Array(signature)));
 }
 
-async function makeToken(secret) {
-  const payload = b64url(JSON.stringify({exp: Date.now() + 8 * 60 * 60 * 1000}));
+async function makeToken(secret, role, username) {
+  const payload = b64url(JSON.stringify({exp: Date.now() + 8 * 60 * 60 * 1000, role, username}));
   return payload + "." + await sign(payload, secret);
 }
 
 async function validToken(request, env) {
   const authorization = request.headers.get("Authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return false;
+  if (!authorization.startsWith("Bearer ")) return null;
   const parts = authorization.slice(7).split(".");
-  if (parts.length !== 2) return false;
+  if (parts.length !== 2) return null;
   const [payload, signature] = parts;
   try {
     const data = JSON.parse(unb64(payload));
-    if (!data.exp || data.exp < Date.now()) return false;
+    if (!data.exp || data.exp < Date.now() || !["marketing","director"].includes(data.role)) return null;
     const expected = await sign(payload, env.SESSION_SECRET);
-    return expected === signature;
+    return expected === signature ? data : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -237,12 +237,18 @@ export default {
       if (url.pathname === "/api/login" && request.method === "POST") {
         let body;
         try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
-        if (!body?.password || body.password !== env.PANEL_PASSWORD) return json({message:"Senha inválida."},401,origin);
+        const username=String(body?.username||"").trim().toLowerCase();
+        const password=String(body?.password||"");
+        let role="";
+        if (username===String(env.MARKETING_USERNAME||"").trim().toLowerCase() && password===env.MARKETING_PASSWORD) role="marketing";
+        if (username===String(env.DIRECTOR_USERNAME||"").trim().toLowerCase() && password===env.DIRECTOR_PASSWORD) role="director";
+        if (!role) return json({message:"Usuário ou senha inválidos."},401,origin);
         if (!env.SESSION_SECRET) return json({message:"SESSION_SECRET não configurado."},500,origin);
-        return json({token:await makeToken(env.SESSION_SECRET)},200,origin);
+        return json({token:await makeToken(env.SESSION_SECRET,role,username),role,username},200,origin);
       }
 
-      if (!(await validToken(request,env))) return json({message:"Não autorizado."},401,origin);
+      const session=await validToken(request,env);
+      if (!session) return json({message:"Não autorizado."},401,origin);
 
       if (url.pathname === "/api/submissions" && request.method === "GET") {
         await ensureDriveColumn(env);
@@ -262,10 +268,11 @@ export default {
           const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||""})),pagination:formData?.data?.pagination||{}},200,origin);
+        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||""})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
+        if (session.role !== "marketing") return json({message:"Acesso restrito à equipe de Marketing."},403,origin);
         await ensureDriveColumn(env);
         if (!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
         let body;
@@ -284,8 +291,8 @@ export default {
         let body;
         try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
         const id=body?.id,status=body?.status,note=String(body?.note||"").trim(),directorName=String(body?.directorName||"").trim(),driveUrl=String(body?.driveUrl||"").trim();
-        const allowed=["pending","in_review","approved","rejected","done"];
-        if(!id||!allowed.includes(status)) return json({message:"Status inválido."},400,origin);
+        const allowedByRole={marketing:["in_review","done"],director:["in_review","approved","rejected"]};
+        if(!id||!allowedByRole[session.role]?.includes(status)) return json({message:"Você não tem permissão para este status."},403,origin);
         if(!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
 
         const currentResult=await env.DB.prepare("SELECT status,updated_at FROM request_status WHERE submission_id=?").bind(id).first();
