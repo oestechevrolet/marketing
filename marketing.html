@@ -26,8 +26,11 @@
 
 <section class="card step active">
 <div class="step-kicker">Etapa 1</div><h2 class="step-title">Dados do solicitante</h2><p class="step-help">Informe quem está solicitando a demanda e como a equipe deverá fazer o retorno.</p>
-<div class="field"><label for="gerente">Quem está solicitando? <span class="req">*</span></label>
-<select id="gerente" name="fi-select-gerente" required><option value="">Selecione o gerente</option><option>Alan</option><option>Leandro</option><option>João Neto</option><option>João Ricardo</option></select></div>
+<div class="grid">
+<div class="field"><label for="concessionaria">Concessionária <span class="req">*</span></label>
+<select id="concessionaria" name="fi-select-concessionaria" required><option value="">Selecione a concessionária</option><option value="O09 - Oeste Barra do Garças">O09 - Oeste Barra do Garças</option><option value="O10 - Oeste Nova Mutum">O10 - Oeste Nova Mutum</option><option value="O11 - Oeste Campo Novo">O11 - Oeste Campo Novo</option><option value="O12 - Oeste Tangará">O12 - Oeste Tangará</option></select></div>
+<div class="field"><label for="nomeSolicitante">Nome do solicitante <span class="req">*</span></label><input id="nomeSolicitante" type="text" name="fi-text-nome_solicitante" placeholder="Nome completo" autocomplete="name" required></div>
+</div>
 <div class="grid">
 <div class="field"><label for="email">E-mail para retorno <span class="req">*</span></label><input id="email" type="email" name="fi-email-email_retorno" placeholder="nome@empresa.com.br" required></div>
 <div class="field"><label for="telefone">Telefone / WhatsApp</label><input id="telefone" type="tel" name="fi-phone-telefone" placeholder="(65) 99999-9999" inputmode="tel"></div>
