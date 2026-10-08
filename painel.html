@@ -13,7 +13,9 @@
     <h1>Painel de Marketing</h1>
     <p>Acesso restrito à gestão das solicitações.</p>
     <form id="loginForm">
-      <label for="password">Senha do painel</label>
+      <label for="username">Usuário</label>
+      <input id="username" type="text" autocomplete="username" placeholder="marketing ou diretor" required>
+      <label for="password">Senha</label>
       <input id="password" type="password" autocomplete="current-password" required>
       <button class="btn primary" type="submit">Entrar</button>
       <div id="loginError" class="error hidden"></div>
