@@ -1,13 +1,21 @@
 const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
 const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
 const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
-const WORKER_VERSION = "attachments-v4";
+const WORKER_VERSION = "attachments-v5";
 
 async function ensureDriveColumn(env) {
   if (!env.DB) return;
   const columns = await env.DB.prepare("PRAGMA table_info(request_status)").all();
   if (!(columns.results || []).some(c => c.name === "drive_url")) {
     await env.DB.prepare("ALTER TABLE request_status ADD COLUMN drive_url TEXT").run();
+  }
+}
+
+async function ensureFileUrlsColumn(env) {
+  if (!env.DB) return;
+  const columns = await env.DB.prepare("PRAGMA table_info(request_status)").all();
+  if (!(columns.results || []).some(c => c.name === "file_urls")) {
+    await env.DB.prepare("ALTER TABLE request_status ADD COLUMN file_urls TEXT").run();
   }
 }
 
@@ -128,8 +136,6 @@ function normalizeFiles(submission) {
     for (const value of Object.values(item)) add(value);
   };
 
-  // Forminit documents submission.files[].url as the direct download URL.
-  // Keep only the generated URL; the original filename/type are unnecessary in the panel.
   add(submission?.files);
   add(submission?.attachments);
 
@@ -139,6 +145,71 @@ function normalizeFiles(submission) {
   }
 
   return [...new Set(urls)].map(url => ({url}));
+}
+
+function extractWebhookFileUrls(data) {
+  const urls = [];
+  const add = (item) => {
+    if (!item) return;
+    if (Array.isArray(item)) {
+      item.forEach(add);
+      return;
+    }
+    if (typeof item === "string") {
+      if (item.startsWith("http://") || item.startsWith("https://")) urls.push(item);
+      return;
+    }
+    if (typeof item !== "object") return;
+
+    const direct = item.file || item.url;
+    if (typeof direct === "string" && (direct.startsWith("http://") || direct.startsWith("https://"))) {
+      urls.push(direct);
+      return;
+    }
+
+    for (const value of Object.values(item)) add(value);
+  };
+
+  for (const [key, value] of Object.entries(data || {})) {
+    if (/file|arquivo|attachment|anexo/i.test(key)) add(value);
+  }
+
+  return [...new Set(urls)].map(url => ({url}));
+}
+
+function storedFiles(row) {
+  if (!row?.file_urls) return [];
+  try {
+    const parsed = JSON.parse(row.file_urls);
+    return Array.isArray(parsed) ? parsed.filter(item => item?.url) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function verifyForminitWebhook(request, rawBody, env) {
+  const secret = env.FORMINIT_WEBHOOK_SECRET;
+  if (!secret) return true;
+
+  const webhookId = request.headers.get("Forminit-Webhook-Id") || "";
+  const timestamp = request.headers.get("Forminit-Webhook-Timestamp") || "";
+  const signature = request.headers.get("Forminit-Webhook-Signature") || "";
+  if (!webhookId || !/^\d+$/.test(timestamp) || !/^v1=[a-f0-9]{64}$/.test(signature)) return false;
+
+  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
+  if (age > 300) return false;
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    {name:"HMAC",hash:"SHA-256"},
+    false,
+    ["sign"]
+  );
+  const signed = "v1." + webhookId + "." + timestamp + "." + rawBody;
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signed));
+  const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2,"0")).join("");
+  return signature.slice(3) === hex;
 }
 
 function buildDemandRows(submission) {
@@ -186,7 +257,16 @@ async function fetchSubmission(env, id) {
     if (!response.ok) throw new Error(data?.message || "Falha ao consultar Forminit.");
     const submissions = data?.data?.submissions || [];
     const found = submissions.find(item => item.id === id);
-    if (found) return found;
+    if (found) {
+      if (env.DB) {
+        await ensureFileUrlsColumn(env);
+        const row = await env.DB.prepare("SELECT file_urls FROM request_status WHERE submission_id=?").bind(id).first();
+        if ((!Array.isArray(found.files) || !found.files.length) && row?.file_urls) {
+          found.files = storedFiles(row);
+        }
+      }
+      return found;
+    }
     const pagination = data?.data?.pagination || {};
     if (!pagination.lastPage || page >= pagination.lastPage) break;
     page++;
@@ -284,11 +364,31 @@ export default {
         return json({token:await makeToken(env.SESSION_SECRET,role,username),role,username},200,origin);
       }
 
+      if (url.pathname === "/api/forminit-webhook" && request.method === "POST") {
+        const rawBody = await request.text();
+        if (!(await verifyForminitWebhook(request, rawBody, env))) {
+          return json({message:"Webhook inválido."},401,origin);
+        }
+        let payload;
+        try { payload = JSON.parse(rawBody); } catch { return json({message:"JSON inválido."},400,origin); }
+        if (payload?.event !== "form.submitted" || !payload?.id) {
+          return json({received:true},200,origin);
+        }
+        if (!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
+        await ensureFileUrlsColumn(env);
+        const files = extractWebhookFileUrls(payload.data || {});
+        await env.DB.prepare(
+          "INSERT INTO request_status (submission_id,status,note,drive_url,file_urls,updated_at) VALUES (?, 'pending', '', '', ?, CURRENT_TIMESTAMP) ON CONFLICT(submission_id) DO UPDATE SET file_urls=excluded.file_urls,updated_at=CURRENT_TIMESTAMP"
+        ).bind(payload.id, JSON.stringify(files)).run();
+        return json({received:true,files:files.length},200,origin);
+      }
+
       const session=await validToken(request,env);
       if (!session) return json({message:"Não autorizado."},401,origin);
 
       if (url.pathname === "/api/submissions" && request.method === "GET") {
         await ensureDriveColumn(env);
+        await ensureFileUrlsColumn(env);
         if (!env.FORMINIT_API_KEY || !env.FORMINIT_FORM_ID) return json({message:"Configuração do Forminit incompleta."},500,origin);
         const formUrl = new URL("https://api.forminit.com/v1/forms/"+env.FORMINIT_FORM_ID);
         formUrl.searchParams.set("size","100");
@@ -302,10 +402,14 @@ export default {
         const statuses={};
         if(ids.length&&env.DB){
           const placeholders=ids.map(()=>"?").join(",");
-          const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
+          const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url,file_urls FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:Array.isArray(s.files)?s.files:normalizeFiles(s),fileDebug:{hasFilesProperty:Object.prototype.hasOwnProperty.call(s,"files"),filesType:Array.isArray(s.files)?"array":typeof s.files,filesCount:Array.isArray(s.files)?s.files.length:0,blockFileKeys:Object.keys(s.blocks||{}).filter(k=>/file|arquivo|attachment|anexo/i.test(k))}})),pagination:formData?.data?.pagination||{}},200,origin);
+        return json({submissions:submissions.map(s=>{
+          const apiFiles=Array.isArray(s.files)?s.files:normalizeFiles(s);
+          const files=apiFiles.length?apiFiles:storedFiles(statuses[s.id]);
+          return {...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files};
+        }),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
