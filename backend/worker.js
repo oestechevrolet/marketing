@@ -172,7 +172,7 @@ function emailLayout(title, intro, body) {
   return '<div style="font-family:Arial,Helvetica,sans-serif;background:#f3f7fa;padding:28px;color:#193244"><div style="max-width:720px;margin:auto;background:#fff;border:1px solid #dce6ed;border-radius:14px;padding:28px"><div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b2e4f">Oeste Chevrolet · Painel de Marketing</div><h1 style="color:#0b2e4f;font-size:24px;margin:12px 0 8px">'+escapeHtml(title)+'</h1><p style="line-height:1.6">'+escapeHtml(intro)+'</p>'+body+'</div></div>';
 }
 
-function statusEmail(submission,status,extra) {
+function statusEmail(env,submission,status,extra) {
   const campaign = getCampaign(submission);
   const requester = getRequester(submission);
   const rows = buildDemandRows(submission);
@@ -270,7 +270,7 @@ export default {
         if(status==="rejected" && (!directorName || !note)) return json({message:"Para reprovar, informe o nome do diretor e a mensagem ao solicitante."},400,origin);
 
         const submission=await fetchSubmission(env,id);
-        const email=statusEmail(submission,status,{directorName,note});
+        const email=statusEmail(env,submission,status,{directorName,note});
         if(!email || !email.to) return json({message:"Não foi possível determinar o destinatário do e-mail."},400,origin);
         const emailIdempotencyKey="status-"+status+"-"+id+"-"+previousUpdatedAt;
         await sendEmail(env,{...email,idempotencyKey:emailIdempotencyKey});
