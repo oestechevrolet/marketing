@@ -113,7 +113,7 @@ function normalizeFiles(submission) {
       return;
     }
     if (typeof item === "string") {
-      if (/^https?:\\/\\//i.test(item)) found.push({url:item,name:fallbackLabel||"Arquivo"});
+      if (item.startsWith("http://") || item.startsWith("https://")) found.push({url:item,name:fallbackLabel||"Arquivo"});
       return;
     }
     if (typeof item !== "object") return;
