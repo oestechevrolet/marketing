@@ -1,7 +1,7 @@
 const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
 const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
 const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
-const WORKER_VERSION = "attachments-v5";
+const WORKER_VERSION = "panel-cleanup-v1";
 
 async function ensureDriveColumn(env) {
   if (!env.DB) return;
@@ -16,6 +16,14 @@ async function ensureFileUrlsColumn(env) {
   const columns = await env.DB.prepare("PRAGMA table_info(request_status)").all();
   if (!(columns.results || []).some(c => c.name === "file_urls")) {
     await env.DB.prepare("ALTER TABLE request_status ADD COLUMN file_urls TEXT").run();
+  }
+}
+
+async function ensureDeletedColumn(env) {
+  if (!env.DB) return;
+  const columns = await env.DB.prepare("PRAGMA table_info(request_status)").all();
+  if (!(columns.results || []).some(c => c.name === "deleted_at")) {
+    await env.DB.prepare("ALTER TABLE request_status ADD COLUMN deleted_at TEXT").run();
   }
 }
 
@@ -389,6 +397,7 @@ export default {
       if (url.pathname === "/api/submissions" && request.method === "GET") {
         await ensureDriveColumn(env);
         await ensureFileUrlsColumn(env);
+        await ensureDeletedColumn(env);
         if (!env.FORMINIT_API_KEY || !env.FORMINIT_FORM_ID) return json({message:"Configuração do Forminit incompleta."},500,origin);
         const formUrl = new URL("https://api.forminit.com/v1/forms/"+env.FORMINIT_FORM_ID);
         formUrl.searchParams.set("size","100");
@@ -402,14 +411,31 @@ export default {
         const statuses={};
         if(ids.length&&env.DB){
           const placeholders=ids.map(()=>"?").join(",");
-          const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url,file_urls FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
+          const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url,file_urls,deleted_at FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>{
+        const visibleSubmissions=submissions.filter(s=>!statuses[s.id]?.deleted_at);
+        return json({submissions:visibleSubmissions.map(s=>{
           const apiFiles=Array.isArray(s.files)?s.files:normalizeFiles(s);
           const files=apiFiles.length?apiFiles:storedFiles(statuses[s.id]);
           return {...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files};
         }),pagination:formData?.data?.pagination||{}},200,origin);
+      }
+
+      if (url.pathname === "/api/delete" && request.method === "POST") {
+        await ensureDeletedColumn(env);
+        if (!env.DB) return json({message:"Banco D1 não configurado."},500,origin);
+        let body;
+        try { body = await request.json(); } catch { return json({message:"JSON inválido."},400,origin); }
+        const id=String(body?.id||"").trim();
+        if(!id) return json({message:"Solicitação inválida."},400,origin);
+        const submission=await env.DB.prepare("SELECT submission_id FROM request_status WHERE submission_id=?").bind(id).first();
+        if(!submission){
+          await env.DB.prepare("INSERT INTO request_status (submission_id,status,note,drive_url,updated_at,deleted_at) VALUES (?, 'pending', '', '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)").bind(id).run();
+        } else {
+          await env.DB.prepare("UPDATE request_status SET deleted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE submission_id=?").bind(id).run();
+        }
+        return json({ok:true,deleted:true,id},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
