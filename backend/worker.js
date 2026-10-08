@@ -114,13 +114,13 @@ function normalizeFiles(submission) {
       return;
     }
     if (typeof item === "string") {
-      if (/^https?:\\/\\//i.test(item)) urls.push(item);
+      if (item.startsWith("http://") || item.startsWith("https://")) urls.push(item);
       return;
     }
     if (typeof item !== "object") return;
 
     const direct = item.url || item.file || item.downloadUrl || item.download_url || item.href || item.link;
-    if (typeof direct === "string" && /^https?:\\/\\//i.test(direct)) {
+    if (typeof direct === "string" && (direct.startsWith("http://") || direct.startsWith("https://"))) {
       urls.push(direct);
       return;
     }
