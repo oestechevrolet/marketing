@@ -268,7 +268,7 @@ export default {
           const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||""})),pagination:formData?.data?.pagination||{}},200,origin);
+        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:(s.files||[]).map(f=>({...f,url:f.url||f.file||f.downloadUrl||f.download_url||""}))})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
