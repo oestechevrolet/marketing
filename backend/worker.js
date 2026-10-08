@@ -104,6 +104,40 @@ function getCampaign(submission) {
   return field(b,"fi-text-nome_campanha","nome_campanha") || "Sem campanha";
 }
 
+function normalizeFiles(submission) {
+  const found = [];
+  const add = (item, fallbackLabel = "") => {
+    if (!item) return;
+    if (Array.isArray(item)) {
+      item.forEach(x => add(x, fallbackLabel));
+      return;
+    }
+    if (typeof item === "string") {
+      if (/^https?:\\/\\//i.test(item)) found.push({url:item,name:fallbackLabel||"Arquivo"});
+      return;
+    }
+    if (typeof item !== "object") return;
+    const url = item.url || item.file || item.downloadUrl || item.download_url || item.href || item.link || "";
+    const name = item.name || item.filename || item.originalName || item.original_name || fallbackLabel || "Arquivo";
+    if (url) found.push({...item,url,name});
+  };
+
+  add(submission?.files);
+  add(submission?.attachments);
+
+  const blocks = submission?.blocks || {};
+  for (const [key, value] of Object.entries(blocks)) {
+    if (/file|arquivo|attachment|anexo/i.test(key)) add(value, key.replace(/^fi-file-/, "").replace(/\[\]$/,""));
+  }
+
+  const unique = new Map();
+  for (const file of found) {
+    const key = file.url || (file.name + "|" + (file.size || ""));
+    if (!unique.has(key)) unique.set(key, file);
+  }
+  return [...unique.values()];
+}
+
 function buildDemandRows(submission) {
   const b = submission?.blocks || {};
   const rows = [
@@ -268,7 +302,7 @@ export default {
           const result=await env.DB.prepare("SELECT submission_id,status,note,drive_url FROM request_status WHERE submission_id IN ("+placeholders+")").bind(...ids).all();
           for(const row of result.results||[]) statuses[row.submission_id]=row;
         }
-        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:(s.files||[]).map(f=>({...f,url:f.url||f.file||f.downloadUrl||f.download_url||""}))})),pagination:formData?.data?.pagination||{}},200,origin);
+        return json({submissions:submissions.map(s=>({...s,panelStatus:statuses[s.id]?.status||"pending",panelNote:statuses[s.id]?.note||"",driveUrl:statuses[s.id]?.drive_url||"",files:normalizeFiles(s)})),pagination:formData?.data?.pagination||{}},200,origin);
       }
 
       if (url.pathname === "/api/drive" && request.method === "POST") {
