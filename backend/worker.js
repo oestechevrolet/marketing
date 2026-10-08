@@ -1,6 +1,7 @@
 const ALLOWED_ORIGIN = "https://oestechevrolet.github.io";
 const DEFAULT_MARKETING_EMAIL = "marketing@oesteveiculos.com.br";
 const DEFAULT_FROM_EMAIL = "marketing@oesteveiculos.com.br";
+const WORKER_VERSION = "attachments-v3";
 
 async function ensureDriveColumn(env) {
   if (!env.DB) return;
@@ -266,7 +267,7 @@ export default {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null,{status:204,headers:corsHeaders(origin)});
     try {
-      if (url.pathname === "/api/health" && request.method === "GET") return json({ok:true,service:"oeste-marketing-api"},200,origin);
+      if (url.pathname === "/api/health" && request.method === "GET") return json({ok:true,service:"oeste-marketing-api",version:WORKER_VERSION},200,origin);
 
       if (url.pathname === "/api/login" && request.method === "POST") {
         let body;
