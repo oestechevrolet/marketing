@@ -231,12 +231,13 @@ function buildDemandRows(submission) {
     ["Prioridade", field(b,"fi-radio-prioridade","prioridade") || "Normal"],
     ["Material", field(b,"fi-checkbox-tipo_material[]","tipo_material")],
     ["Canais", field(b,"fi-checkbox-canais_divulgacao[]","canais_divulgacao")],
-    ["Veículo", field(b,"fi-select-modelo_veiculo","modelo_veiculo")],
+    ["Veículo", field(b,"fi-text-modelo_veiculo","fi-select-modelo_veiculo","modelo_veiculo")],
     ["Versão / ano", [field(b,"fi-text-versao_veiculo","versao_veiculo"),field(b,"fi-text-ano_modelo","ano_modelo")].filter(Boolean).join(" · ")],
     ["Condição comercial", field(b,"fi-radio-possui_oferta","possui_oferta")],
     ["Preço à vista", field(b,"fi-text-preco_vista","preco_vista")],
     ["Objetivo", field(b,"fi-text-objetivo","objetivo")],
     ["Descrição", field(b,"fi-text-descricao_demanda","descricao_demanda")],
+    ["Observações adicionais", field(b,"fi-text-observacoes_veiculo","observacoes_veiculo")],
     ["Observações", field(b,"fi-text-observacoes_finais","observacoes_finais")]
   ];
   return rows.filter(([,value]) => value).map(([label,value]) => '<tr><td style="padding:8px 10px;border:1px solid #dce6ed;font-weight:700;width:180px">'+escapeHtml(label)+'</td><td style="padding:8px 10px;border:1px solid #dce6ed">'+escapeHtml(value)+'</td></tr>').join("");
