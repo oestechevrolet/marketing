@@ -47,8 +47,7 @@
 <div class="field"><label>Prioridade <span class="req">*</span></label><div class="choices">
 <div class="choice"><input type="radio" id="prioNormal" name="fi-radio-prioridade" value="Normal" required><label for="prioNormal">Normal</label></div>
 <div class="choice"><input type="radio" id="prioAlta" name="fi-radio-prioridade" value="Alta"><label for="prioAlta">Alta</label></div>
-<div class="choice"><input type="radio" id="prioUrgente" name="fi-radio-prioridade" value="Urgente"><label for="prioUrgente">Urgente</label></div>
-</div><div class="help">Use “Urgente” somente quando houver necessidade operacional de prioridade.</div></div>
+</div></div>
 </div>
 </section>
 
@@ -81,7 +80,7 @@
 <div class="choice"><input type="radio" id="veiNao" name="fi-radio-envolve_veiculo" value="Não"><label for="veiNao">Não</label></div>
 </div></div>
 <div id="veiculoFields" class="hidden"><div class="grid">
-<div class="field"><label for="modelo">Modelo</label><select id="modelo" name="fi-select-modelo_veiculo"><option value="">Selecione</option><option>Onix</option><option>Onix Plus</option><option>Tracker</option><option>Montana</option><option>S10</option><option>Trailblazer</option><option>Spin</option><option>Equinox</option><option>Silverado</option><option>Outro</option></select></div>
+<div class="field"><label for="modelo">Modelo</label><input id="modelo" type="text" name="fi-text-modelo_veiculo" placeholder="Ex.: Sonic, S10"></div>
 <div class="field"><label for="versao">Versão</label><input id="versao" type="text" name="fi-text-versao_veiculo" placeholder="Ex.: Premier 1.2 Turbo"></div>
 <div class="field"><label for="anoModelo">Ano/modelo</label><input id="anoModelo" type="text" name="fi-text-ano_modelo" placeholder="Ex.: 2026/2026"></div>
 </div></div>
@@ -134,8 +133,8 @@
 <div class="step-kicker">Etapa 6</div><h2 class="step-title">Conferência e envio</h2><p class="step-help">Revise as informações e confirme que os dados comerciais foram conferidos.</p>
 <div class="summary" id="summary"></div>
 <div class="field" style="margin-top:16px"><div class="choice"><input type="checkbox" id="confirmInfo" name="fi-checkbox-confirmacao_informacoes" value="Confirmo que as informações fornecidas foram conferidas e estão corretas." required><label for="confirmInfo">Confirmo que as informações comerciais, preços, condições de financiamento e demais dados fornecidos nesta solicitação foram conferidos e estão corretos. <span class="req">*</span></label></div></div>
-<div class="field"><div class="choice"><input type="checkbox" id="confirmPrazo" name="fi-checkbox-ciencia_prazo" value="Ciente de que o prazo de produção começa após a aprovação." required><label for="confirmPrazo">Estou ciente de que o prazo de produção começa após a aprovação da solicitação pelo Diretor de Marketing. <span class="req">*</span></label></div></div>
-<div class="notice">Após o envio, a solicitação seguirá para análise do Diretor de Marketing. A equipe de produção só receberá a demanda depois da aprovação.</div>
+<div class="field"><div class="choice"><input type="checkbox" id="confirmPrazo" name="fi-checkbox-ciencia_prazo" value="Ciente de que o prazo de produção começa após a aprovação." required><label for="confirmPrazo">Estou ciente de que o prazo de produção começa após a aprovação da solicitação. <span class="req">*</span></label></div></div>
+<div class="notice">Após o envio, a solicitação seguirá para análise. A equipe de produção só receberá a demanda depois da aprovação.</div>
 </section>
 
 <div class="actions">
